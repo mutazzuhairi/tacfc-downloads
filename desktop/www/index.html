@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>TAC FC</title>
+<style>
+  .off { display: none; } body.offline .off { display: block; } body.offline button.off { display: inline-block; } body.offline .on { display: none; }
+  :root { --bg: #0e1320; --card: #161d2f; --text: #ffffff; --muted: #a7b0c4; --green: #00a651; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
+  main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    padding: 24px; text-align: center; }
+  svg.logo { width: 88px; height: 88px; }
+  h1 { margin: 0; font-size: 22px; font-weight: 800; }
+  p { margin: 0; color: var(--muted); max-width: 320px; }
+  button { appearance: none; border: 0; border-radius: 14px; background: var(--green); color: #fff; font: inherit; font-weight: 700;
+    padding: 14px 32px; min-width: 200px; min-height: 48px; cursor: pointer; }
+  button:active { transform: scale(0.98); opacity: 0.9; }
+  button[disabled] { opacity: 0.6; }
+  .hint { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+    <rect width="64" height="64" rx="15" fill="#161d2f"/>
+    <rect x="12" y="17" width="40" height="10" rx="5" fill="#ffffff"/>
+    <rect x="27" y="17" width="10" height="33" rx="5" fill="#ffffff"/>
+    <circle cx="17" cy="22" r="3.6" fill="#00a651"/>
+    <circle cx="47" cy="22" r="3.6" fill="#00a651"/>
+    <circle cx="32" cy="45" r="3.6" fill="#00a651"/>
+  </svg>
+  <p class="on" id="c">Connecting...</p>
+  <h1 class="off" id="t">You are offline</h1>
+  <p class="off" id="b">TAC FC could not reach the server. Check your internet connection and try again.</p>
+  <button class="off" id="retry" type="button">Retry</button>
+  <p class="off hint" id="h">We will try again by ourselves when you are back online.</p>
+</main>
+<script>
+// The desktop app's start page (bundled, works offline). It checks that tacfc.com answers, then opens the game
+// in direct mode (?source=direct, see apps/web/lib/nativeApp.ts). Offline: a retry button, and a retry by itself
+// when the connection comes back. Once the game is open, the site's own service worker covers short drops.
+(function () {
+  var HOME = 'https://tacfc.com/?source=direct';
+  var PROBE = 'https://tacfc.com/manifest.webmanifest';
+  var T = {
+    en: ['You are offline', 'TAC FC could not reach the server. Check your internet connection and try again.', 'Retry', 'We will try again by ourselves when you are back online.', 'Connecting...'],
+    ar: ['أنت غير متصل', 'تعذر على TAC FC الوصول إلى الخادم. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.', 'إعادة المحاولة', 'سنحاول مجددًا تلقائيًا عند عودة الاتصال.', 'جارٍ الاتصال...'],
+    de: ['Du bist offline', 'TAC FC kann den Server nicht erreichen. Prüfe deine Internetverbindung und versuche es erneut.', 'Erneut versuchen', 'Wir versuchen es automatisch wieder, sobald du online bist.', 'Verbinde...'],
+    fr: ['Vous êtes hors ligne', 'TAC FC ne peut pas joindre le serveur. Vérifiez votre connexion internet et réessayez.', 'Réessayer', 'Nous réessaierons tout seuls dès que vous serez en ligne.', 'Connexion...'],
+    es: ['Sin conexión', 'TAC FC no puede conectar con el servidor. Revisa tu conexión a internet y vuelve a intentarlo.', 'Reintentar', 'Lo intentaremos de nuevo solos cuando vuelvas a tener conexión.', 'Conectando...'],
+    it: ['Sei offline', 'TAC FC non riesce a raggiungere il server. Controlla la connessione internet e riprova.', 'Riprova', 'Riproveremo da soli quando sarai di nuovo online.', 'Connessione...'],
+    pt: ['Você está offline', 'O TAC FC não conseguiu acessar o servidor. Verifique sua conexão com a internet e tente de novo.', 'Tentar de novo', 'Vamos tentar de novo sozinhos quando você voltar a ficar online.', 'Conectando...'],
+    tr: ['Çevrimdışısın', 'TAC FC sunucuya ulaşamadı. İnternet bağlantını kontrol edip tekrar dene.', 'Tekrar dene', 'Tekrar çevrimiçi olduğunda kendimiz yeniden deneyeceğiz.', 'Bağlanıyor...'],
+    nl: ['Je bent offline', 'TAC FC kan de server niet bereiken. Controleer je internetverbinding en probeer het opnieuw.', 'Opnieuw proberen', 'We proberen het zelf opnieuw zodra je weer online bent.', 'Verbinden...'],
+    ru: ['Нет подключения', 'TAC FC не может связаться с сервером. Проверьте подключение к интернету и попробуйте снова.', 'Повторить', 'Мы попробуем снова сами, когда связь вернется.', 'Подключение...']
+  };
+  var lang = (navigator.language || 'en').slice(0, 2).toLowerCase();
+  var s = T[lang] || T.en;
+  if (lang === 'ar') { document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl'; }
+  document.getElementById('t').textContent = s[0];
+  document.getElementById('b').textContent = s[1];
+  document.getElementById('h').textContent = s[3];
+  document.getElementById('c').textContent = s[4];
+  var btn = document.getElementById('retry');
+  btn.textContent = s[2];
+  var busy = false;
+  function offline() { busy = false; btn.disabled = false; btn.textContent = s[2]; document.body.className = 'offline'; }
+  function go() {
+    if (busy) return;
+    busy = true; btn.disabled = true; btn.textContent = s[4];
+    var done = false;
+    var timer = setTimeout(function () { if (!done) { done = true; offline(); } }, 10000);
+    fetch(PROBE, { mode: 'no-cors', cache: 'no-store' }).then(function () {
+      if (done) return; done = true; clearTimeout(timer); window.location.replace(HOME);
+    }, function () {
+      if (done) return; done = true; clearTimeout(timer); offline();
+    });
+  }
+  btn.addEventListener('click', go);
+  window.addEventListener('online', go);
+  go();
+})();
+</script>
+</body>
+</html>

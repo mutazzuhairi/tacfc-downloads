@@ -1,0 +1,71 @@
+name: desktop
+
+# TAC FC desktop app (desktop, Tauri v2): the direct downloads for tacfc.com/download.
+# Windows: NSIS installer (.exe). Unsigned by choice (owner decision): SmartScreen may warn once.
+# Mac: universal .app and .dmg (unsigned here; the notarized .dmg needs a Developer ID certificate).
+# Every run uploads to a DRAFT release (never published by this workflow) with latest.json for the updater.
+#
+# Repo secrets needed (the updater keypair lives in ~/.tacfc/tauri on the owner's Mac):
+#   TAURI_SIGNING_PRIVATE_KEY           contents of ~/.tacfc/tauri/updater.key
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  contents of ~/.tacfc/tauri/updater.password
+#
+# Release: bump "version" in desktop/src-tauri/tauri.conf.json, then push a tag desktop-v<version>
+# (or run this workflow by hand). Check the draft, then publish it.
+
+on:
+  push:
+    tags: ['desktop-v*']
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows (NSIS .exe)
+            os: windows-latest
+            args: '--bundles nsis'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri -> target
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Mac signing and notarization, later (needs a Developer ID Application certificate):
+          # APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
+          # APPLE_API_KEY, APPLE_API_ISSUER, APPLE_API_KEY_PATH.
+        with:
+          projectPath: desktop
+          tauriScript: npx --yes @tauri-apps/cli@2
+          args: ${{ matrix.args }}
+          tagName: desktop-v__VERSION__
+          releaseName: TAC FC desktop __VERSION__
+          releaseBody: TAC FC for Windows and Mac. Download from https://tacfc.com/download.
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
