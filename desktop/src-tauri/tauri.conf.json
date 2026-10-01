@@ -52,7 +52,7 @@
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI0RDhGNTc3MTVBN0MwODYKUldTR3dLY1ZkL1hZSlBGamRRSjNXZWNFQm5RMnU1YWg1bmRScUtGcjVFbE1wc011WElwYUZkWFoK",
       "endpoints": [
         "https://tacfc.com/downloads/desktop/latest.json",
-        "https://github.com/mutazzuhairi/tmx/releases/latest/download/latest.json"
+        "https://github.com/mutazzuhairi/tacfc-downloads/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"
